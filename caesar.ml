@@ -46,6 +46,6 @@ let _ =
     in
 
   match (mode,key,src,dist) with
-  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist -> cipher key src dist
-  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist -> cipher (-key) src dist
+  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist -> (try cipher key src dist with _ -> printf "'%s' doesn't exist\n" src)
+  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist -> (try cipher (-key) src dist with _ -> printf "'%s' doesn't exist\n" src)
   | _ -> help ();
