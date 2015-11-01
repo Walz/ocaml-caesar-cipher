@@ -51,7 +51,7 @@ let _ =
 
   match (mode,key,src,dist) with
   | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist ->
-    (try cipher key src dist with Sys_error("lol: No such file or directory") -> printf "'%s' doesn't exist\n" src)
+    (try cipher key src dist with _ -> printf "'%s' doesn't exist\n" src)
   | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist ->
-    (try cipher (-key) src dist with Sys_error("lol: No such file or directory") -> printf "'%s' doesn't exist\n" src)
+    (try cipher (-key) src dist with _ -> printf "'%s' doesn't exist\n" src)
   | _ -> help ();
