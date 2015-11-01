@@ -20,6 +20,10 @@ let help ()=
   print_string "-e or --encrypt\n";
   print_string "-d or --decrypt\n";;
 
+let modulo a b =
+  let m = a mod b in
+  if m < 0 then (-m) else m;;
+
 let cipher key src dist =
   let in_channel = open_in src in
   let out_channel = open_out dist in
@@ -27,7 +31,7 @@ let cipher key src dist =
     while true do
       let line = input_line in_channel in
 
-      let res = implode (List.map (fun c -> Char.chr (((Char.code c) + key) mod 255)) (explode line)) in
+      let res = implode (List.map (fun c -> Char.chr (modulo ((Char.code c) + key) 255)) (explode line)) in
 
       fprintf out_channel "%s\n" res;
     done;
@@ -46,6 +50,8 @@ let _ =
     in
 
   match (mode,key,src,dist) with
-  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist -> (try cipher key src dist with _ -> printf "'%s' doesn't exist\n" src)
-  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist -> (try cipher (-key) src dist with _ -> printf "'%s' doesn't exist\n" src)
+  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist ->
+    (try cipher key src dist with Sys_error("lol: No such file or directory") -> printf "'%s' doesn't exist\n" src)
+  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist ->
+    (try cipher (-key) src dist with Sys_error("lol: No such file or directory") -> printf "'%s' doesn't exist\n" src)
   | _ -> help ();
