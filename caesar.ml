@@ -22,7 +22,7 @@ let help ()=
 
 let modulo a b =
   let m = a mod b in
-  if m < 0 then (-m) else m;;
+  if m < 0 then (m+b) else m;;
 
 let cipher key src dist =
   let in_channel = open_in src in
