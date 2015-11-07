@@ -1,5 +1,10 @@
 open Printf
 
+let (--) i j =
+  let rec aux n acc =
+    if n < i then acc else aux (n-1) (n :: acc)
+  in aux (j-1) [] ;;
+
 let explode s =
   let rec exp i l =
     if i < 0 then l else exp (i - 1) (s.[i] :: l) in
@@ -25,6 +30,9 @@ let modulo a b =
   let m = a mod b in
   if m < 0 then (m+b) else m;;
 
+let caesar text key =
+  implode (List.map (fun c -> Char.chr (modulo ((Char.code c) + key) 256)) (explode text));;
+
 let cipher key src dist =
   let in_channel = open_in src in
   let out_channel = open_out dist in
@@ -32,7 +40,7 @@ let cipher key src dist =
     while true do
       let line = input_line in_channel in
 
-      let res = implode (List.map (fun c -> Char.chr (modulo ((Char.code c) + key) 255)) (explode line)) in
+      let res = caesar line key in
 
       fprintf out_channel "%s\n" res;
     done;
@@ -44,10 +52,11 @@ let cipher key src dist =
 
 let break src dist =
   let in_channel = open_in src in
-  let out_channel = open_out dist in
   let n = in_channel_length in_channel in
   let text = Bytes.create n in
   really_input in_channel text 0 n;
+  close_in in_channel;
+
   let explode_text = List.sort compare (explode text) in
   let freqList = List.filter (fun (xl,xn) -> (Char.code xl) > 15) (
     List.sort compare (List.fold_left
@@ -57,10 +66,33 @@ let break src dist =
     [(List.hd explode_text,0)]
     explode_text)) in
   let (letter,freq) = List.hd freqList in
-  printf "%i of '%c' - %i\n" freq letter (Char.code letter);
-  printf "key = %i\n" ((Char.code letter) - (Char.code ' '));
-  close_in in_channel;
-  close_out out_channel;;
+
+  let mostFreqLetters = [' ';'e';'a'] in
+  let found = ref false in
+  let test text key =
+    if !found then (false,0) else
+    let res = caesar text (-key) in
+    printf "%s\nDoes it look ok ? (key=%i) [n] " res key;
+    let a = explode (read_line ()) in
+    found :=  (try (List.hd a) = 'y' with _ -> false);
+    (!found,key)
+  in
+  let sub = try String.sub text 0 20 with _ -> text in
+  let tests = try
+    List.map (test sub) (List.map (fun x -> (Char.code letter) - (Char.code x)) mostFreqLetters)
+  with _ -> [(false,0)] in
+
+  let b,k = try List.find (fun (x,y) -> x) tests with _ -> (false,0) in
+  if b then
+  begin
+  let _ = cipher (-k) src dist in
+  printf "Great !\n";
+  end
+  else
+  begin
+    printf "key not found\n";
+    ();
+  end;;
 
 let _ =
   let (mode,key,src,dist) =
