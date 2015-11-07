@@ -17,6 +17,10 @@ let implode l =
   | c :: l -> Bytes.set res i c ; imp (i + 1) l in
   imp 0 l;;
 
+let modulo a b =
+  let m = a mod b in
+  if m < 0 then (m+b) else m;;
+
 let help ()=
   print_string "Caesar Cipher\n";
   print_string "Usage: ./caesar [MODE] (KEY) SOURCE DESTINATION\n";
@@ -25,10 +29,6 @@ let help ()=
   print_string "-e or --encrypt KEY\n";
   print_string "-d or --decrypt KEY\n";
   print_string "-b or --break\n";;
-
-let modulo a b =
-  let m = a mod b in
-  if m < 0 then (m+b) else m;;
 
 let caesar text key =
   implode (List.map (fun c -> Char.chr (modulo ((Char.code c) + key) 256)) (explode text));;
@@ -68,6 +68,7 @@ let break src dist =
   let (letter,freq) = List.hd freqList in
 
   let mostFreqLetters = [' ';'e';'a'] in
+
   let found = ref false in
   let test text key =
     if !found then (false,0) else
@@ -77,7 +78,15 @@ let break src dist =
     found :=  (try (List.hd a) = 'y' with _ -> false);
     (!found,key)
   in
-  let sub = try String.sub text 0 20 with _ -> text in
+
+  let in_channel = open_in src in
+  let s = ref "" in
+  while (String.length !s) < 100 do
+    s := !s ^ "(\\n)" ^ (input_line in_channel);
+  done;
+  let sub = try String.sub !s 0 100 with _ -> !s in
+  close_in in_channel;
+
   let tests = try
     List.map (test sub) (List.map (fun x -> (Char.code letter) - (Char.code x)) mostFreqLetters)
   with _ -> [(false,0)] in
@@ -90,8 +99,39 @@ let break src dist =
   end
   else
   begin
-    printf "key not found\n";
-    ();
+    printf "We are going to have to go brute force on this !\n";
+    let brute text key =
+      key,caesar text (-key)
+    in
+    let found = ref false in
+    let k = ref 0 in
+    let rec rfor i n =
+      if i > n then !found else
+      if !found then !found else
+      let possibilities = List.map (brute sub) ((i*15)--(i*15+15)) in
+      let _ = List.map
+        (fun (k,s) -> printf "%i: %s\n" k
+          (String.map (fun c -> if (Char.code c) > 31 && (Char.code c) < 127 then c else ' ') s))
+        possibilities 
+      in
+      let a = try int_of_string (read_line ()) with _ -> -1 in
+      if a >= i*15+15 then
+      begin
+        printf "Can you see the future ?!\n";
+        rfor i n
+      end
+      else
+      begin
+        k := a;
+        found := (try a > 0 with _ -> false);
+        rfor (i+1) n
+      end;
+    in
+    if rfor 0 16 then
+      let _ = cipher (-(!k)) src dist in
+      printf "It was maybe a bit overkill... But it worked ! %i\n" !k;
+    else
+      printf "Sorry, we couldn't find it...\n";
   end;;
 
 let _ =
