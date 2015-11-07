@@ -1,6 +1,6 @@
 # Caesar Cipher
 
-Use caesar cipher to encrypt and decrypt text file.
+Use caesar cipher to encrypt and decrypt text file using ascii code, meaning every encoding of a text with a key and the same key modulo 255 will give the same result.
 
 ## Installation
 #### Dependecy
