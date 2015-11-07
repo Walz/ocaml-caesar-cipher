@@ -1,6 +1,7 @@
 # Caesar Cipher
 
-Use Caesar cipher to encipher and decipher text file using ASCII code, meaning every encoding of a text with a key and the same key modulo 255 will give the same result. Let you break the cipher and decipher without the key (frequency analysis and brute force).  It's purely educational.
+Use Caesar cipher to encipher and decipher text file using ASCII code, meaning every encoding of a text with a key and the same key modulo 255 will give the same result. Let you break the cipher and decipher without the key (frequency analysis and brute force).  
+It's purely educational.
 
 ## Installation
 #### Dependecy
