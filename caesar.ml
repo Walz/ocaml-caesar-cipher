@@ -14,11 +14,12 @@ let implode l =
 
 let help ()=
   print_string "Caesar Cipher\n";
-  print_string "Usage: ./caesar [MODE] KEY SOURCE DESTINATION\n";
+  print_string "Usage: ./caesar [MODE] (KEY) SOURCE DESTINATION\n";
   print_newline ();
   print_string "Modes:\n";
-  print_string "-e or --encrypt\n";
-  print_string "-d or --decrypt\n";;
+  print_string "-e or --encrypt KEY\n";
+  print_string "-d or --decrypt KEY\n";
+  print_string "-b or --break\n";;
 
 let modulo a b =
   let m = a mod b in
@@ -41,12 +42,35 @@ let cipher key src dist =
     close_out out_channel;
   end;;
 
+let break src dist =
+  let in_channel = open_in src in
+  let out_channel = open_out dist in
+  let n = in_channel_length in_channel in
+  let text = Bytes.create n in
+  really_input in_channel text 0 n;
+  let explode_text = List.sort compare (explode text) in
+  let freqList = List.filter (fun (xl,xn) -> (Char.code xl) > 15) (
+    List.sort compare (List.fold_left
+    (fun x c -> match x with
+      | ((xl,xn) :: t) -> (if xl = c then (xl,xn+1) :: t else (c,1) :: (xl,xn) :: t)
+      | _ -> failwith "error")
+    [(List.hd explode_text,0)]
+    explode_text)) in
+  let (letter,freq) = List.hd freqList in
+  printf "%i of '%c' - %i\n" freq letter (Char.code letter);
+  printf "key = %i\n" ((Char.code letter) - (Char.code ' '));
+  close_in in_channel;
+  close_out out_channel;;
+
 let _ =
   let (mode,key,src,dist) =
     try
       (Sys.argv.(1), int_of_string Sys.argv.(2), Sys.argv.(3), Sys.argv.(4))
     with
-      _ -> ("0",0,"0","0")
+      _ ->
+      try
+        (Sys.argv.(1), 0, Sys.argv.(2), Sys.argv.(3))
+      with _ -> ("0",0,"0","0")
     in
 
   match (mode,key,src,dist) with
@@ -54,4 +78,6 @@ let _ =
     (try cipher key src dist with _ -> printf "'%s' doesn't exist\n" src)
   | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist ->
     (try cipher (-key) src dist with _ -> printf "'%s' doesn't exist\n" src)
+  | ("-b",0,src,dist) | ("--break",0,src,dist) when src <> dist ->
+    (try break src dist with _ -> printf "'%s' doesn't exist\n" src)
   | _ -> help ();
