@@ -3,7 +3,7 @@
 Use caesar cipher to encrypt and decrypt text file.
 
 ## Installation
-#### Dependecy :  
+#### Dependecy
 - Ocaml (4.02+)  
 
 *(See `compatibility` branch for previous version of OCaml)*
@@ -14,7 +14,7 @@ ocamlc caesar.ml -o caesar && rm caesar.c*
 ```
 #### Commands
 ```
-  ./caesar [MODE] KEY SOURCE_FILE DESTINATION_FILE
+./caesar [MODE] KEY SOURCE_FILE DESTINATION_FILE
 ```
 ###### Modes :
 - *-e* or *--encrypt*
