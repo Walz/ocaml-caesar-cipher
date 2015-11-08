@@ -73,7 +73,7 @@ let break src dist =
   let test text key =
     if !found then (false,0) else
     let res = caesar text (-key) in
-    printf "%s\nDoes it look ok ? (key=%i) [n] " res key;
+    printf "%s\nDoes it look ok ? (key=%i) [y/N] " res key;
     let a = explode (read_line ()) in
     found :=  (try (List.hd a) = 'y' with _ -> false);
     (!found,key)
@@ -82,13 +82,13 @@ let break src dist =
   let in_channel = open_in src in
   let s = ref "" in
   while (String.length !s) < 100 do
-    s := !s ^ "(\\n)" ^ (input_line in_channel);
+    s := !s ^ (input_line in_channel);
   done;
   let sub = try String.sub !s 0 100 with _ -> !s in
   close_in in_channel;
 
   let tests = try
-    List.map (test sub) (List.map (fun x -> (Char.code letter) - (Char.code x)) mostFreqLetters)
+    List.map (test sub) (List.map (fun x -> modulo ((Char.code letter) - (Char.code x)) 256) mostFreqLetters)
   with _ -> [(false,0)] in
 
   let b,k = try List.find (fun (x,y) -> x) tests with _ -> (false,0) in
@@ -99,7 +99,10 @@ let break src dist =
   end
   else
   begin
-    printf "We are going to have to go brute force on this !\n";
+    printf "\n%s\n%s"
+    "We are going to have to go brute force on this !"
+    "We're going to display all the possibilities 15 at a times. If you find the right one just type it's number.";
+    let _ = read_line () in
     let brute text key =
       key,caesar text (-key)
     in
@@ -112,24 +115,24 @@ let break src dist =
       let _ = List.map
         (fun (k,s) -> printf "%i: %s\n" k
           (String.map (fun c -> if (Char.code c) > 31 && (Char.code c) < 127 then c else ' ') s))
-        possibilities 
+        possibilities
       in
       let a = try int_of_string (read_line ()) with _ -> -1 in
       if a >= i*15+15 then
       begin
-        printf "Can you see the future ?!\n";
+        printf "You can see the future ?!\n";
         rfor i n
       end
       else
       begin
         k := a;
-        found := (try a > 0 with _ -> false);
+        found := (try a >= 0 with _ -> false);
         rfor (i+1) n
       end;
     in
     if rfor 0 16 then
       let _ = cipher (-(!k)) src dist in
-      printf "It was maybe a bit overkill... But it worked ! %i\n" !k;
+      printf "It was maybe a bit overkill... But it worked !\n";
     else
       printf "Sorry, we couldn't find it...\n";
   end;;
