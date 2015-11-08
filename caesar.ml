@@ -52,90 +52,46 @@ let cipher key src dist =
 
 let break src dist =
   let in_channel = open_in src in
-  let n = in_channel_length in_channel in
-  let text = Bytes.create n in
-  really_input in_channel text 0 n;
-  close_in in_channel;
-
-  let explode_text = List.sort compare (explode text) in
-  let freqList = List.filter (fun (xl,xn) -> (Char.code xl) > 15) (
-    List.sort compare (List.fold_left
-    (fun x c -> match x with
-      | ((xl,xn) :: t) -> (if xl = c then (xl,xn+1) :: t else (c,1) :: (xl,xn) :: t)
-      | _ -> failwith "error")
-    [(List.hd explode_text,0)]
-    explode_text)) in
-  let (letter,freq) = List.hd freqList in
-
-  let mostFreqLetters = [' ';'e';'a'] in
-
-  let found = ref false in
-  let test text key =
-    if !found then (false,0) else
-    let res = caesar text (-key) in
-    printf "%s\nDoes it look ok ? (key=%i) [y/N] " res key;
-    let a = explode (read_line ()) in
-    found :=  (try (List.hd a) = 'y' with _ -> false);
-    (!found,key)
-  in
-
-  let in_channel = open_in src in
   let s = ref "" in
-  while (String.length !s) < 100 do
-    s := !s ^ (input_line in_channel);
-  done;
+  let _ = (try
+    while (String.length !s) < 100 do
+      s := !s ^ (input_line in_channel);
+    done;
+  with _ -> ()) in
   let sub = try String.sub !s 0 100 with _ -> !s in
   close_in in_channel;
 
-  let tests = try
-    List.map (test sub) (List.map (fun x -> modulo ((Char.code letter) - (Char.code x)) 256) mostFreqLetters)
-  with _ -> [(false,0)] in
-
-  let b,k = try List.find (fun (x,y) -> x) tests with _ -> (false,0) in
-  if b then
-  begin
-  let _ = cipher (-k) src dist in
-  printf "Great !\n";
-  end
+  printf "Choose the text which make sense.\n";
+  let _ = read_line () in
+  let brute text key =
+    key,caesar text (-key)
+  in
+  let comp (xk,xt) (yk,yt) =
+    let count x = (if (Char.code x) >= 32 && (Char.code x) < 127 then (if x = ' ' || ((Char.code x) >= 64 && (Char.code x) <= 122 && ((Char.code x) < 91 || (Char.code x) > 96)) then 5 else 1) else 0) in
+    let xcount = List.fold_left
+      (fun v x -> v + (count x))
+      0 (explode xt) in
+    let ycount = List.fold_left
+      (fun v x -> v + (count x))
+      0 (explode yt) in
+    compare ycount xcount
+  in
+  let k = ref (-1) in
+  let find (key,text) =
+    if !k >= 0 then () else
+    begin
+      printf "%i) %s [y/N] " key (String.map (fun c -> if (Char.code c) < 32 then ' ' else c) text);
+      let input = try Char.lowercase (List.hd (explode (read_line ()))) with _ -> 'n' in
+      k := if input = 'y' then key else !k;
+      ()
+    end;
+  in
+  let _ = List.map find (List.sort comp (List.map (brute sub) (0--256))) in
+  if !k >= 0 then
+    let _ = cipher (-(!k)) src dist in
+    printf "Great !\n";
   else
-  begin
-    printf "\n%s\n%s"
-    "We are going to have to go brute force on this !"
-    "We're going to display all the possibilities 15 at a times. If you find the right one just type it's number.";
-    let _ = read_line () in
-    let brute text key =
-      key,caesar text (-key)
-    in
-    let found = ref false in
-    let k = ref 0 in
-    let rec rfor i n =
-      if i > n then !found else
-      if !found then !found else
-      let possibilities = List.map (brute sub) ((i*15)--(i*15+15)) in
-      let _ = List.map
-        (fun (k,s) -> printf "%i: %s\n" k
-          (String.map (fun c -> if (Char.code c) > 31 && (Char.code c) < 127 then c else ' ') s))
-        possibilities
-      in
-      let a = try int_of_string (read_line ()) with _ -> -1 in
-      if a >= i*15+15 then
-      begin
-        printf "You can see the future ?!\n";
-        rfor i n
-      end
-      else
-      begin
-        k := a;
-        found := (try a >= 0 with _ -> false);
-        rfor (i+1) n
-      end;
-    in
-    if rfor 0 16 then
-      let _ = cipher (-(!k)) src dist in
-      printf "It was maybe a bit overkill... But it worked !\n";
-    else
-      printf "Sorry, we couldn't find it...\n";
-  end;;
+    printf "Sorry, we couldn't find it...\n";;
 
 let _ =
   let (mode,key,src,dist) =
@@ -149,9 +105,9 @@ let _ =
     in
 
   match (mode,key,src,dist) with
-  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist ->
+  | ("-e",key,src,dist) | ("--encrypt",key,src,dist) when src <> dist && key <> 0 ->
     (try cipher key src dist with _ -> printf "'%s' doesn't exist\n" src)
-  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist ->
+  | ("-d",key,src,dist) | ("--decrypt",key,src,dist) when src <> dist && key <> 0 ->
     (try cipher (-key) src dist with _ -> printf "'%s' doesn't exist\n" src)
   | ("-b",0,src,dist) | ("--break",0,src,dist) when src <> dist ->
     (try break src dist with _ -> printf "'%s' doesn't exist\n" src)
