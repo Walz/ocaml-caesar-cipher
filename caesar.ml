@@ -61,7 +61,7 @@ let break src dist =
   let sub = try String.sub !s 0 100 with _ -> !s in
   close_in in_channel;
 
-  printf "Choose the text which make sense.\n";
+  printf "Choose the text which makes sense.\n";
   let _ = read_line () in
   let brute text key =
     key,caesar text (-key)
